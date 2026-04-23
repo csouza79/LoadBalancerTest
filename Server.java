@@ -1,7 +1,7 @@
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.concurrent.Executors;
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
 
@@ -16,14 +16,12 @@ public class Server {
 
     public void start() throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
-        server.createContext("/", new HttpHandler() {
-            @Override
-            public void handle(HttpExchange exchange) throws IOException {
-                String response = "Response from " + name;
-                exchange.sendResponseHeaders(200, response.getBytes().length);
-                OutputStream os = exchange.getResponseBody();
+        server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
+        server.createContext("/", (HttpExchange exchange) -> {
+            String response = "Response from " + name;
+            exchange.sendResponseHeaders(200, response.getBytes().length);
+            try (OutputStream os = exchange.getResponseBody()) {
                 os.write(response.getBytes());
-                os.close();
             }
         });
 
