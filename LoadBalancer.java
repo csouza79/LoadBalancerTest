@@ -3,15 +3,20 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class LoadBalancer {
     private final List<String> servers;
     private final AtomicInteger currentIndex;
+    private final HttpClient client;
 
     public LoadBalancer(List<String> servers) {
         this.servers = servers;
         this.currentIndex = new AtomicInteger(0);
+        this.client = HttpClient.newBuilder()
+                .executor(Executors.newVirtualThreadPerTaskExecutor())
+                .build();
     }
 
     public String getNextServer() {
@@ -21,7 +26,6 @@ public class LoadBalancer {
 
     public String forwardRequest(String clientRequest) throws Exception {
         String server = getNextServer();
-        HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(new URI(server))
                 .GET()
